@@ -1,0 +1,60 @@
+
+6/12/2022 
+
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "create table employee(id int, name varchar(30), salary int)";
+
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into employee values(100,'Kirti',130000)";
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into employee values(101,'Pari',1300)";
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into employee values(102,'Akash',97000)";
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into employee values(103,'Babu',7000)";
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into employee values(104,'Chintu',25000)";
+
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "select name from employee where id=101";
+
+sqoop import --connect jdbc:mysql://localhost/mydb5 --query "select * from student where stud_marks>800 and \$CONDITIONS" --target-dir '/Sqoop_Import_2/stud_marks_800_plus' -m 1;
+
+////hdfs dfs -rm -r -skipTrash /Sqoop_Import_2/stud_marks_800_plus/
+
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "create table dept(dept_id int,eid int, dname varchar(30), dloc varchar(30))";
+
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into dept values(1,100,'Electrical','hyd')";
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into dept values(2,101,'Mechanical','mumbai')";
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into dept values(3,102,'Chemical','pune')";
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into dept values(4,103,'IT','banglore')";
+sqoop eval --connect jdbc:mysql://localhost/mydb5 --query "insert into dept values(3,104,'Chemical','pune')";
+
+sqoop import --connect jdbc:mysql://localhost/mydb5 --query "select e.id, e.name, e.salary, d.dept_id, d.dname, d.dloc from employee e inner join dept d on (e.id=d.eid) and \$CONDITIONS" --target-dir '/Sqoop_Import_2/emp_dept_join/' -m 1;
+
+hdfs dfs -cat /Sqoop_Import_2/emp_dept_join/part-m-00000
+
+-----o/p stored a sequence file-----------
+
+sqoop import --connect jdbc:mysql://localhost/mydb5 --table employee -m 1 --fields-terminated-by '|' --where 'salary>15000' --target-dir '/Sqoop_Import_2/emp_seq_file/' --as-sequencefile;
+
+ -------to view the content of a sequence file---------
+
+hdfs dfs -cat /Sqoop_Import_2/emp_seq_file/part-m-00000
+//Output
+SEQ!org.apache.hadoop.io.LongWritablemployee�u
+                                               7B滉-'[�Ϳ�TdKirti��fAkashz�hChintua�
+
+----------------------------------------
+sqoop import --connect jdbc:mysql://localhost/mydb5 --username root --password password --query 'select * from employee where salary>25000 AND $CONDITIONS' --split-by employee.salary --target-dir '/Sqoop_Import_2/emp_split_by' -m 2;
+
+///hdfs dfs -rmr -skipTrash /Sqoop_Import_2/emp_split_by/
+
+sqoop list-tables --connect jdbc:mysql://localhost/mydb5 --username root -P
+
+------------------------------------------
+Find out the customers who have made more than 5 orders
+
+orders schema:
+order_id int,
+order_date varchar(30),
+order_customer_id int,
+order_status varchar(30)
+
+
+
+
+

@@ -1,0 +1,57 @@
+create table fruit(fname string, fcost float, city string)
+row format delimited
+fields terminated by '\t';
+
+load data local inpath '/media/sf_MyWork/fruit.txt' into table fruit;
+
+add jar /home/admin1/Documents/Hive_Day5/myudf101_1.jar;
+
+create temporary function MyFunc as 'com.example.RemoveSpace';
+
+select Myfunc(fname) from fruit;
+
+select * from fruit;
+
+create table new_fruit(
+fname string,
+fcost int, 
+fcity string)
+row format delimited
+fields terminated by '\t';
+
+select * from new_table;
+
+insert into new_fruit select MyFunc(fname), fcost, city from fruit;
+
+select * from new_table;
+
+------------------
+
+create table emp_with_special(
+e_id int,
+e_fname string,
+e_lname string,
+e_salary int)
+row format delimited
+fields terminated by ',';
+
+load data local inpath '/home/admin1/Documents/Hive_Day5/emp_spChar.txt' into table emp_with_special;
+
+add jar /home/admin1/Documents/Hive_Day5/NewJarUdf.jar;
+
+create temporary function Func1 as 'com.remove.RemoveSpChar';
+
+select Func1(e_fname, "$#") from emp_with_special;
+
+create table emp_cleaned(
+id int,
+fname string,
+lname string,
+salary int)
+row format delimited
+fields terminated by ',';
+
+insert into table emp_cleaned select e_id, Func1(e_fname,"$#"), Func1(e_lname,"$#"), e_salary from emp_with_special;
+
+select * from emp_cleaned;
+

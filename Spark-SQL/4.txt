@@ -1,0 +1,177 @@
+Accessing hive tables using spark sql.lssp
+
+Spark context
+sql Context
+Hive context
+
+--------------------HIVE CONTEXT----------------------
+
+to find file hive-site.xml use following command
+[root@quickstart /]# find / -name hive-site.xml
+
+[root@quickstart /]# cp /etc/hive/conf.dist/hive-site.xml /usr/lib/spark/conf/
+
+scala> import org.apache.spark.sql.hive.HiveContext
+import org.apache.spark.sql.hive.HiveContext
+
+scala> val hc = new HiveContext(sc)
+hc: org.apache.spark.sql.hive.HiveContext = org.apache.spark.sql.hive.HiveContext@76d61bef
+
+scala> hc
+res1: org.apache.spark.sql.hive.HiveContext = org.apache.spark.sql.hive.HiveContext@76d61bef
+
+
+scala> hc.sql("create database myspark")
+
+[root@quickstart cloudera]# hive
+
+hive>show databases;
+
+scala> hc.sql("use myspark")
+
+scala> hc.sql("create table samp(id int, name string, sal int,sex string, dno int)
+       row format delimited fields terminated by ','")
+
+
+hive> use myspark;
+
+hive>show tables;
+
+hive>describe samp;
+
+scala> hc.sql("load data local inpath '/emp' into table samp")
+
+scala> hc.sql("select * from samp").show()
+
+scala> val res1 = hc.sql("select dno, sum(sal) as tot from samp group by dno")
+
+scala> res1.show()
+
+hive> select dno, sum(sal) from group by dno;
+
+-------------------- partition -------------
+
+[root@quickstart cloudera]# cat json1
+{"name":"Ravi","age":25}
+{"name":"virendra","city":"Pune"}
+{"name":"Mani","age":23,"city":"Mumbai"}
+
+hive> use myspark;
+
+hive> create table row(line string) 
+
+hive> load data local inpath 'json1' into table raw;
+
+hive> create table info(name string, age int, city string);
+
+hive> select get_json_object(line,'$.name') from raw;
+
+hive> select get_json_object(line,'$.name'),
+      get_json_object(line,'$.age'),
+      get_json_object(line,'$.city') from raw;
+
+hive> select x.* from raw
+      lateral view json_tuple(line,'name','age','city') x as n,a,c;
+
+hive> insert into table info
+      select x.* from raw
+      lateral view json_tuple(line,'name','age','city') x as n,a,c;
+
+
+
+hive> select get_json_object(line,'$.name') from info;
+
+[root@quickstart cloudera]# hadoop fs -copyFromLocal json1 sqlLab
+
+scala> val df = sqlContext.read.json("/user/cloudera/sqlLab/json1")
+
+scala>df.show
+
+hive> select * from info;
+
+scala> df.show()
+
+[root@quickstart cloudera]# cat json2
+
+{"name":"Ravi","age":25,"wife":{"name":"Tina","age":24,"city":"pune"},"city":"del"}
+
+{"name":"Prasad","age":30,"wife":{"name":"Meena","qual":"bthech","city":"mumbai"},"city":"Durg"}
+
+hive> create table jraw(line string);
+
+hive>load data local inpath 'json2' into table jraw;
+
+hive> create table raw2(name string, age int, wife string, city string);
+
+hive> insert into table raw2
+      select x.* from jraw
+      lateral view json_tuple(line,'name','age','wife','city') x as n,a,w,c;
+
+hive> select * from raw2;
+
+hive>select name,get_json_object(eife,'$.name'),
+     age, get_json_object(wife,'$.age'),
+     get_json_object(wife,'$.qual'),
+     city, get_json_object(wife,'$.city') from raw2;
+
+
+[root@quickstart cloudera]# hadoop fs -copyFromLocal json2 sqlLab
+
+scala> val couples = sqlContext.read.json("/user/cloudera/sqlLab/json2")
+
+scala>couples.show()
+
+scala> couples.collect
+
+scala>couples.collect.map(x => x(3))
+
+[root@quickstart cloudera]# cat xml1
+
+<rec><name>Ram</name><age>25</age></rec>
+<rec><name>Shikha</name><sex>F</sex></rec>
+<rec><name>shyam</name><age>35</age><sex>M</sex></rec>
+scala> hc
+
+scala> hc.sql("use myspark")
+
+scala>hc.sql("create table xrow (line string)")
+
+scala>hc.sql("create table xinfo(name string, age int, city string)
+      row format delimited fields terminated by ','")
+
+scala>hc.sql("insert into table xinfo select xpath_string (line,'rec/name'), xpath_int
+     (line,'rec/age'),xpath_string(line,'rec/city') from xraw")
+
+scala>hc.sql("load data local inpath 'xml1' into table xrow")
+
+scala>hc.sql("select * from xraw").show()
+
+scala>hc.sql("insert into table xinfo select xpath_string(line,'rec/name'), 
+      xpath_int(line,'rec/age'), xpath_string(line,'rec/city') from xraw")
+
+scala>hc.sql("select xpath_string(line, 'rec/name') from xraw").show()
+
+scala>hc.sql("select xpath_string(line, 'rec/age') from xraw").show()
+
+
+scala>hc.sql("select xpath_string(line, 'rec/sex') from xraw").show()
+
+scala>hc.sql("select xpath_string(line, 'rec/name'), xpath_string(line, 'rec/age')
+       xpath_string(line, 'rec/sex') from xraw").show()
+
+
+scala> hc.sql("create table xresults(name string, age int, sex string) row format
+     delimited fields terminated by ',' ")
+
+scala>hc.sql("insert into table xresult select xpath_string(line,'rec/name'),
+     xpath_int(line,'rec/age'), tpath_string(line,'rec/sex') from xraw")
+
+scala>hc.sql("select * from xresults").show()
+
+hive> select  * from xraw;
+
+scala> select * from xresults;
+
+
+
+

@@ -1,0 +1,6 @@
+1,toyota,corolla,2013
+2,ford,focus,2013
+3,audi,a4,2015
+4,toyota,camry,2007
+5,kia,sportage,null
+6,abc,camry,null

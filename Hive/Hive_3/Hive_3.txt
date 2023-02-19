@@ -1,0 +1,127 @@
+start-dfs.sh
+
+start-yarn.sh
+
+hive
+
+set hive.cli.print.current.db=true;
+
+use mydb7;
+
+----------------------------------------------
+
+* adding custom-made serde jar to session
+
+add jar hive-json-serde-0.2.jar;
+
+----------------------------------------------
+* Creating table with json format support (custom serde program written to be able to parse json file data)
+
+CREATE TABLE user_json(id int, name string)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.contrib.serde2.JsonSerde';
+
+load data local inpath '/home/admin1/Documents/Hive_Docs/Hive_Day4/user.json' into table user_json;
+
+select * from user_json;
+
+select name from user_json where id=3;
+
+select name, id from user_json where name='Yash';
+
+----------------------------------------------
+
+* Now creating table from employee.json file
+
+CREATE TABLE employee_json(
+userId string,
+jobTitleName string,
+firstName string,
+lastName string,
+preferredFullName string,
+employeeCode string,
+region string,
+phoneNumber string,
+emailAddress string)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.contrib.serde2.JsonSerde';
+
+* Please format your json file data such that each json comes on a single line,
+* array of json is not parsable in hive-json-serde-0.2.jar
+
+load data local inpath '/home/admin1/Documents/Hive_Docs/Hive_Day4/employees.json' into table employee_json;
+
+select * from employee_json;
+
+select userid, jobtitlename, employeecode, region from employee_json where firstname like 'T%' and lastname like 'H%';
+
+--------------------------------------------------------
+* loading xml file into table
+
+* add hivexmlserde jar to current session
+add jar hivexmlserde-1.0.5.2.jar;
+
+
+create table user_xml(id int, name string)
+row format serde 'com.ibm.spss.hive.serde2.xml.XmlSerDe'
+With serdeproperties(
+"column.xpath.id"="/user/id/text()",
+"column.xpath.name"="/user/name/text()"
+)
+stored as 
+inputformat 'com.ibm.spss.hive.serde2.xml.XmlInputFormat'
+Outputformat 'org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat'
+TBLPROPERTIES(
+"xmlinput.start"="<user>",
+"xmlinput.end"="</user>"
+);
+
+load data local inpath '/home/admin1/Documents/Hive_Docs/Hive_Day4/user.xml' into table user_xml;
+
+
+------------------------------------------------------------
+----Aggregation functions in HQL
+
+select sum(age) from owners;
+
+sum(distinct col) <----returns sum of unique elements in the group (eliminate duplicate)
+
+avg(col) <-----returns average value of elements from a group
+
+min(col) <-----returns minimum value of elements from a group
+
+max(col) <-----returns maximum value of elements from a group
+
+
+-------------------------------------------------------------
+* Cars and owners join exercise
+
+create table cars(
+car_id int,
+car_name string,
+car_model string,
+year int)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/home/admin1/Documents/Hive_Docs/Hive_Day4/cars.txt' into table cars;
+
+
+create table owners(
+owner_id int,
+owner_name string,
+age int,
+car_id int)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/home/admin1/Documents/Hive_Docs/Hive_Day4/owners.txt' into table owners;
+
+* joining two tables on car_id 
+select *
+From cars ca
+left join owners ow
+on ca.car_id=ow.owner_id
+
+* display car_name which are more than 2
+select car_name from cars group by car_name having count(*)>1;

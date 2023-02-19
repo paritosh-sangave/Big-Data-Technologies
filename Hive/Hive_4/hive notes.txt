@@ -1,0 +1,451 @@
+#create database
+create database <database_name>;
+
+#change current database
+use <database_name>;
+
+#hive property to show current database
+set hive.cli.print.current.db=true;
+
+# creating normal table according to the layout of file
+
+
+
+
+
+
+#complex datatypes
+array -> list of same type of elements
+	syntax:col_name array<datatype_of_elements>
+	e.g. emp_work_loc array<string>
+map -> key and value
+	syntax:col_name map<key_data_type,value_data_type>
+	e.g. emp_skill_score map<string,int>
+struct -> it is a userdefined structure of any(may contain different data types) type of fields
+	syntax:col_name struct<elem_name1:data_type1,elem_name2:data_type2,.......>
+	e.g. emp_gen_age struct<sex:string,age:int>
+
+#creating table with complex datatypes
+create table employees
+(
+emo_name string,
+emp_work_loc array<string>,
+emp_gen_age struct<sex:string,age:int>,
+emp_skill_score MAP<string,int>,
+emp_dept_title MAP<STRING,ARRAY<STRING>>
+)
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY '|'
+COLLECTION ITEMS TERMINATED BY ':'
+MAP KEYS TERMINATED BY ':';
+
+
+------------------------------------------------------------------------------------------------------
+# create external table if it not already exists in the database
+
+CREATE EXTERNAL TABLE IF NOT EXISTS EMPLOYEE_EXTERNAL
+(
+NAME STRING,
+WORK_PLACE ARRAY<STRING>,
+SEX_AGE STRUCT <SEX:STRING, AGE:INT>,
+skill_score MAP<string,int>,
+dept_title MAP<STRING,ARRAY<STRING>>
+)
+COMMENT 'THIS IS AN EXTERNAL TABLE'
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY '|'
+COLLECTION ITEMS TERMINATED BY ':'
+MAP KEYS TERMINATED BY ':'
+STORED AS TEXTFILE
+LOCATION '/DATA1111/';
+
+#here while creating external table we define the location of the file so we don't need to load the data afterwards
+#if we drop the table only the schema is deleted and not the data, as the data is not stored in the same location, but somewhere else. so, if we create the schema back and spcify the location of the file in it, we get the data back without actually having to load the data again
+-----------------------------------------------------------------------------------------------------
+
+# creating views on tables in hive
+
+CREATE VIEW EMPLOYEE_SKILLS
+AS
+SELECT NAME, SKILLS_SCORE  ['DB'] AS DB,
+SKILLS_SCORE['PERL'] AS PERL, SKILLS_SCORE['PYTHON'] AS PYTHON,
+SKILLS_SCORE['SALES'] AS SALES, SKILLS_SCORE['HR'] AS HR
+FROM EMPLOYEE_EXTERNAL;
+
+#set the property to print current working database as true
+set hive.cli.print.current.db=true;
+
+-------------------------------------------------------------------------------------------------------
+# creating partitioned table 
+
+create table student
+(
+name string,
+rollno int,
+per float
+)
+partitioned by(state string,city string)
+row format delimited
+fields terminated by ',';
+
+---------------------------------------------------------------------------------------------------
+# loading data into the partitions created
+
+load data local inpath '/media/sf_MyWork/HiveData/partstudmah' into table student partition(state='mah',city='pune');
+
+load data local inpath '/media/sf_MyWork/HiveData/partstudgujart' into table student partition(state='Gujrat',city='Surat');
+---------------------------------------------------------------------------------------
+# property to enable dynamic partition
+# we can only create dynamically partitioned tables after enabling this property as it is in strict mode so it does not allow us to make statically partitioned tables
+> set hive.exec.dynamic.partition=true;
+
+#here we set the dynamic partition mode as nonstrict. so, now we can create both static(normal) partition tables as well as dynamically partitioned tables
+> set hive.exec.dynamic.partion.mode=nonstrict;
+
+=========================================================================================
+#create table with dynamic partitions 
+
+create table student1(name string,rollno int,per float,state string,city string)
+row format delimited
+fields terminated by ',';
+
+#single load statement to load data in the dynamic partitions, hadoop decides which data will be in which partition
+
+load data local inpath '/media/sf_MyWork/HiveData/partstud1' into table student1;
+
+#this runs map reduce job in background to run through all partition and count no of records
+select count(*) from student1;
+
+#creating statically partitioned table (works) as the mode is set to non-strict
+create table stud_part(name string,rollno int,per float)
+partitioned by(state string,city string)
+row format delimited
+fields terminated by ',';
+
+#inserting data into partition stud_part from another table name student1
+insert into table stud_part partion (state,city) select name,rollno,per,state,city from student1;
+
+===============================bucketing=====================
+/* the no. of partitions may exceed the feasible  range if the partiton criteria is not practical 
+for e.g. if we try to create day wise partitions of an annual data then 365 partitions will we created, and if we decide to do it for past 10 years then 3650 partitions will be created,
+then th actual objective of improving the performance cannot be achieved as the processing and retrieval of data from these many no of partitions will require huge time and processing power.
+This problem is solved by bucketing as there will be fixed(pre-defined) no. of buckets
+and which data will be placed in which bucket is decided by using hashing concept, i.e. the data is processed through a hash function(for e.g. id%2 if there are 2 buckets)
+this creates limited no. of buckets and data is placed in one of these buckets depending upon the hash function
+thus the objective of improving the time and processing required is achieved and also the problem of too many partitions is solved by the use of limited buckets 
+*/
+
+#property to enable bucketing
+set hive.enfore.bucketing=true;
+
+// creating a sample_table as we are going to load the data from this table into bucketed table
+create table sample_table1(id int,firstName string,lastName string)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+// creating bucketed table with bucketing based on id and no. of buckets fixed to 3
+// this will create 3 bucket directories in the hdfs
+create table my_bucket_table(id int,fName string,lName string)
+clustered by (id) into 3 buckets
+row format delimited
+fields terminated by ','
+stored as textfile
+ 
+
+
+#inserting data into bucketed table from normal table
+insert into table my_bucket_table select * from sample_table1;
+
+====================creating serde json table==================
+{"userId":"rirani",
+"jobTitleName":"Developer",
+"firstName":"Romin",
+"lastName":"Irani",
+"preferredFullName":"RominIrani",
+"employeeCode":"E1",
+"region":"CA",
+"phoneNumber":"408-1234567",
+"emailAddress":"romin.k.irani@gmail
+
+create table employee_json
+(
+userId string,
+jobTitleName string,
+firstName string,
+lastName string,
+preferredfullname string,
+employeeCode string,
+region string,
+phoneNumber string,
+emailAddress string
+)
+row format serde 'org.apache.hadoop.hive.contrib.serde2.JsonSerde';
+
+
+======================reading xml file in hive============================
+#adding xml jar provided by someone from ibm
+add jar hivexmlserde-1.0.5.2.jar;
+
+create table user_xml(id int,name string)
+row format serde 'com.ibm.spss.hive.serde2.xml.XmlSerDe'
+with serdeproperties(
+"column.xpath.id"="/user/id/text()",
+"column.xpath.name"="/user/name/text()"
+)
+stored as 
+inputformat 'com.ibm.spss.hive.serde2.xml.XmlInputFormat'
+outputformat 'org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat'
+tblproperties(
+"xmlinput.start"="<user>",
+"xmlinput.end"="</user>"
+);
+
+=====================aggregate functions=====================================
+create table owners(ownerid int,oname string,age int,carid int)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/home/admin1/owners.txt' into table owners;
+
+create table cars(carid int,cname string,model string,year string)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/home/admin1/cars.txt' into table cars;
+# this query doesn't work
+select cname from cars inner join owners on(cars.carid=owners.carid) where count(cars.cname) > 1;
+# this gives the cname which has more than one car model
+select cname from cars group by cname having count(cname) > 1;
+
+
+===================================join assignment==========================================
+Customers Schema:
+1.	customer_id             int   
+2.	customer_fname          string
+3.	customer_lname          string
+4.	customer_email          string
+5.	customer_password       string
+6.	customer_street         string
+7.	customer_city           string
+8.	customer_state          string
+9.	customer_zipcode        string
+
+Orders Schema:
+1.	order_id                int   
+2.	order_date              string
+3.	order_customer_id       int   
+4.	order_status            string
+
+
+create table Customers
+(
+customer_id int,
+customer_fname string,
+customer_lname string,
+customer_email string,
+customer_password string,create table xyz(line string);
+customer_street string,
+customer_city string,
+customer_state string,
+customer_zipcode string
+)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/home/admin1/join assignment/customers.txt' into table customers;
+
+create table orders
+(
+order_id int,order_date string,
+order_customer_id int,
+order_status string
+)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/home/admin1/join assignment/orders.txt' into table orders;
+
+Output Requirements:
+1.	Find out the customers who have made more than 5 orders
+2.	Customer name must start with "M"
+3.	Use text format for the output files
+4.	Use "|" as field seperator
+5.	Use gzip compression
+6.	Place the result data in HDFS directory /user/'username'/mock2/problem1/solution
+7.	Output should only contain customer_fname,customer_lname, count
+8.	Output should be sorted by count in descending order
+
+// solution of 1,2,7,8
+select c.customer_fname,c.customer_lname, count(o.order_customer_id) as cnt
+from customers c inner join orders o on(c.customer_id=o.order_customer_id)
+where customer_fname like 'M%'
+group by c.customer_fname,c.customer_lname
+having count(o.order_customer_id)>5
+order by cnt desc;
+
+
+
+===========================================================================================================
+#udf
+
+//creating fruit table
+create table fruit(fname string,fcost float,city string)
+row format delimited
+fields terminated by '\t';
+
+load data local inpath '/home/admin1/fruit.txt' into table fruit;
+
+#adding the jar that we created to remove space
+add jar /media/sf_MyWork/myudf101.jar;
+
+#creating temporary 
+create temporary function MyFun as 'com.example.RemoveSpace';
+
+======================================================================================================
+// removing special characters using udf
+//creating table emp2
+create table emp2
+(
+e_id int,
+e_fname string,
+e_lname string,
+e_sal int
+)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/home/admin1/Desktop/emp2.txt' into table emp2;
+
+create table emp3(e_id int,e_fname string,e_lname string,e_sal int)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+insert into emp3 select e_id,MyFun2(e_fname),MyFun2(e_lname),e_sal from emp2;
+
+==========================================================================================================
+//optimization
+
+create table emp(id int,name string,country string,salary int)
+row format delimited
+fields separated by ','
+stored as textfile;
+
+load data local inpath 'home/admin1/emp.txt' into table emp;
+
+//execution plan of the query
+//explain keyword gives the whole exectution plan of any query
+explain select salary from emp where name='sunny';
+
+=================================================================================================
+create table emp(
+empid int,
+name string,
+salary int,
+sex string,
+deptid int)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/media/sf_MyWork/emp_new.txt' into table emp;
+
+create table dept(
+deptid int,
+dept string,
+loc string)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+load data local inpath '/media/sf_MyWork/dept.txt' into table dept;
+
+explain
+select *
+from emp
+join dept
+on emp.deptid=dept.deptid;
+
+explain 
+select e.deptid, d.dept, sum(salary)
+from emp e
+join dept d
+on e.deptid=d.deptid
+group by e.deptid , d.dept;
+
+
+
+create table empDetails(id int,name string,country string,sal int)
+stored as ORCFILE;
+
+load  data local inpath '/media/sf_MyWork/dummy.txt' into table empdetails;
+
+set hive.cbo.enable=true;
+set hive.compute.query.using.stats=true;
+set hive.stats.fetch.column.stats=true;
+set hive.stats.fetch.partition.stats=true;
+
+
+Problem Statement –
+
+A firm runs a web-site where it expects traffic from various countries across the world. It has loggers on their web servers which saves all the information about the request every client makes.
+Now to grow their business worldwide, they want to analyze the traffic coming on their web servers so that they can provide better service to their customers. Here they are expecting following information 
+1.No. of sessions by country
+2.No. of sessions by city
+3.No. of sessions by browser type
+4.No. of errors per thousand requests
+5.MS Excel reports showing above said information
+
+Data Provided –
+
+1.Web Server logs
+Schema – IP Address, Date, Type of Http call, Http Status, URL
+Hint – Error is when Http Status not equal to 200.
+
+2.IP address to Country, City and Browser Mapping
+Schema – IP, Country, Browser, City
+
+
+========================================================================================
+//table creation with single row or line
+create table xyz(line string);
+
+//then we can load single line string txt file in this table by using
+load data local 
+
+//counting words using lateral view  and explode function
+SELECT words, count(1)
+FROM xyz
+LATERAL VIEW EXPLODE(SPLIT(line, ' ')) expl_words AS words
+GROUP BY words;
+
+//counting words with explode and sub-query
+create table word_count as
+select word,count(1) as count from
+(select explode(split(line, ' ')) as word from xyz)w
+group by word
+order by word;
+
+//gives line count(number of records) of the table
+select count(*) from xyz;
+
+=======================//assignment 03-12-2022=================================================
+create table resultorc1(cid int,cname string,year string,ostatus string,count int)
+stored as ORCFILE;
+
+insert into table resultorc1
+select c.customer_id,c.customer_fname,Year(to_date(o.order_date)) as y,o.order_status,count(o.order_id)
+from customers c inner join orders o on(c.customer_id=o.order_customer_id)
+group by c.customer_id,c.customer_fname,Year(to_date(o.order_date)),o.order_status
+having y='2014' and o.order_status = 'COMPLETE';
+
+select o.order_customer_id,count(o.order_id) as cnt
+from customers c inner join orders o on(c.customer_id=o.order_customer_id)
+where o.order_date like '2013%' and o.order_status = 'COMPLETE'
+group by o.order_customer_id;

@@ -1,0 +1,380 @@
+---------------What is spark SQL----------------------------------------
+
+1. Spark sql is a library, to process spark data objects, using sql statement.
+(Spark sql is not a database)
+2. spark sql follows mysql based sql syntaxes
+
+spark sql provides two types of contexts
+
+a) SQL contexts
+
+b) Hive context
+
+c) spark streaming context
+
+------------Import SQL Context ------------------
+
+scala> import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.SQLContext
+
+
+scala> val sqlCon = new SQLContext(sc)
+
+
+------from spark 1.6 onwords, sqlcontext is by default available in spark shell----
+
+------using sql context we can process spark objects using select statements-------
+
+Using HiveContext, we can integrate, hive with spark. hive is data warehouse environment in hadoop framework.
+so total is stored and managed at hive tables.
+
+Using hivecontext we can access entire hive enviroment (hive tables) from spark.
+
+-------------Differenece between hql statement from hive---------------------------
+
+a) if hql is executed from hive environment, the statement to process will be converted as mapreduce job.
+
+b) if same hive is integrated with spark and hql is submitted from spark, it uses, DAG and Inmemory computing models with persisting features.which is more faster than mapreduce .
+
+-------------------------------spark sql limitation-------------------------------
+
+It is applicable only for structured text.
+
+if data is unstructured 
+
+Need to process, with spark cores rdd api and spark MLib, nlp algorithms. nltk is best campatable with spark mllib
+
+[spark 2.0 onwords]
+
+-------------------Importing hive context -------
+
+scala> import org.apache.spark.sql.hive.HiveContext
+
+-----------------defining hive context ---------
+
+scala> val hc = new HiveContext(sc)
+
+------------------------------------
+example of sqlContext.
+
+scala> import org.apache.spark.sql.SQLContext
+
+scala> val sqc = new SQLContext(sc)
+
+steps to work with sql context
+
+step1:- load data into rdd
+file name ---> file1
+sample------->100,200,300
+	      300,400,400
+               .....
+
+scala> val data = sc.textFile("/user/spark/sample.txt")
+
+
+step2:- provide scema to the rdd
+create case class for the data.
+
+scala> case class Rec(a:Int, b:Int, c:Int)
+defined class Rec
+
+
+step3:- create a function to convert row line into case object.
+[function to provide schema]
+
+scala> def makeRec(line:String)={
+     | val w = line.split(",")
+     | val a = w(0).toInt
+     | val b = w(1).toInt
+     | val c = w(2).toInt
+     | val r = Rec(a, b, c)
+       r
+     | }
+makeRec: (line: String)Unit
+
+
+step4:- transform each recored into case object
+
+scala> val recs = data.map(x => makeRec(x))
+recs: org.apache.spark.rdd.RDD[Unit] = MapPartitionsRDD[2] at map at <console>:35
+
+
+scala> val sqlContext = new SQLContext(sc)
+
+scala> import sqlContext.implicits._
+import sqlContext.implicits._
+
+step5:- convert Into dataframe and create table instance for the dataframe.
+
+scala> recs.toDF().registerTempTable("samp")
+
+step6:- apply select statement on temp table
+
+scala> val my_df = sqlContext.sql("select * from samp LIMIT 2")
+my_df: org.apache.spark.sql.DataFrame = [a: int, b: int, c: int]
+
+scala> my_df.collect().foreach(println)
+[100,200,300]
+[300,400,500]
+
+scala> val my_df = sqlContext.sql("select a+b+c as tot from samp")
+my_df: org.apache.spark.sql.DataFrame = [tot: int]
+
+scala> my_df.collect().foreach(println)
+[600]
+[1200]
+[1800]
+
+
+when sql statement applied on temp table, returned object will be data frame.
+to apply sql statement on result set, again we need to register as temp table.
+
+my_df.registerTempTable(samp1)
+my_df.registerTempTable(samp1)
+
+
+---------------------------------------------++++++++++++---------------------
+
+                  emp 
+---------------------------------------
+id,     name,     sal,    sex,    dno
+---------------------------------------
+101, aaa, 40000, m,11
+'
+'
+'
+----------------------------------------
+import org.apache.spark.sql.SQLContext
+
+scala> val sqlContext = new SQLContext(sc)
+
+step1:- load data into rdd
+
+scala> val data = sc.textFile("/user/spark/emp.txt")
+
+step2:- show the data 
+
+scala> data.collect()
+
+step3 :- create case class for the data.
+
+scala> case class Emp(id:Int, name:String, sal: Int, Sex:String, dno:Int)
+
+step4:- create a function to convert row line into case object.
+[function to provide schema]
+
+scala> def toEmp(x:String)={
+     | val w = x.trim().split(",")
+     | val id = w(0).toInt
+     | val name = w(1)
+     | val sal = w(2).toInt
+     | val sex = w(3)
+     | val dno = w(4).toInt
+     | val e = Emp(id,name,sal,sex,dno)
+     | e
+     | }
+
+
+step4:- transform each recored into case object
+
+scala> val emps = data.map(x => toEmp(x))
+
+step5:- convert Into dataframe and create table instance for the dataframe.
+
+scala> val sqlContext = new SQLContext(sc)
+
+scala> import sqlContext.implicits._
+
+scala> emps.toDF().registerTempTable("emp1")
+
+step6:- apply select statement on temp table
+
+scala> val my_df = sqlContext.sql("select * from emp1 LIMIT 2")
+
+scala> my_df.collect()
+res24: Array[org.apache.spark.sql.Row] = Array([101,aaa,40000,m,11], [102,bbb,50000,f,12])
+
+scala> my_df.collect().foreach(println)
+[101,aaa,40000,m,11]
+[102,bbb,50000,f,12]
+
+step7 :- paly with sql:
+
+scala> val my_df = sqlContext.sql("select * from emp1")
+
+scala> val res1 = sqlContext.sql("select Sex, sum(sal) as tot from emp1 group by Sex")
+
+scala> res1.collect()
+res26: Array[org.apache.spark.sql.Row] = Array([f,213000], [m,262000])          
+
+scala> res1.collect().foreach(println)
+[f,213000]
+[m,262000]
+
+scala> val res2 = sqlContext.sql(" select dno, Sex, sum(sal) as tot, avg(sal) as avg, max(sal) as max, min(sal) as min, count(*) as cnt from emp1 group by dno, Sex")
+
+scala> res2.collect()
+res28: Array[org.apache.spark.sql.Row] = Array([11,m,40000,40000.0,40000,40000,1], [12,f,73000,36500.0,50000,23000,2], [13,m,167000,55666.666666666664,90000,33000,3], [14,f,140000,70000.0,80000,60000,2], [15,m,55000,55000.0,55000,55000,1])
+
+scala> res2.collect().foreach(println)
+[11,m,40000,40000.0,40000,40000,1]
+[12,f,73000,36500.0,50000,23000,2]
+[13,m,167000,55666.666666666664,90000,33000,3]
+[14,f,140000,70000.0,80000,60000,2]
+[15,m,55000,55000.0,55000,55000,1]
+
+-----------------------------------------------------------------------------------------------
+                                                      dept
+------------------------------------------------------------------------------------------------
+11,marketing,hyd
+.
+.
+.
+.
+101,HR,Noida
+-----------------------------------------------------------
+
+---->Import sqlcontext 
+
+scala> import org.apache.spark.sql.SQLContext
+
+-----Create new SQL context sc
+
+scala> val sqlContext = new SQLContext(sc)
+
+step1:- load data into rdd
+                                                 
+scala> val data2 = sc.textFile("/user/spark/dept.txt")
+
+step2:- show the data 
+
+scala> data2.collect()
+res30: Array[String] = Array(11,marketing,hydrabad, 12,sales,Pune, 13,HR,Mumbai, 14,IT,Bangloru)
+
+step3 :- create case class for the data.
+
+scala> case class  Dept(dno:Int, dname:String, city:String)
+
+step4:- create a function to convert row line into case object.
+[function to provide schema]
+
+scala> def toDept(x:String)={
+     | val w = x.trim().split(",")
+     | val dno = w(0).toInt
+     | val dname = w(1)
+     | val city = w(2)
+     | val d = Dept(dno,dname,city)
+     | d
+     | }
+
+
+step5:- transform each recored into case object
+
+scala> val depts = data2.map(x => toDept(x))
+
+**************** YOU CAN CONVERT ROW LINE INTO CASE OBJECT AND TRANSFORM EACH RECORD INTO CASE OBJECT IN SINGLE STEP*********
+
+val dept = data2.map{x => val w = x.split(",") Dept(w(0).toInt, w(1), w(2))
+}
+
+**************************************************************************************************************************
+
+step5:- convert Into dataframe and create table instance for the dataframe.
+
+scala> val sqlContext = new SQLContext(sc)
+
+scala> import sqlContext.implicits._
+
+scala> depts.toDF().registerTempTable("dept123")
+
+step6:- apply select statement on temp table
+
+scala> val result = sqlContext.sql("select * from dept123")
+result: org.apache.spark.sql.DataFrame = [dno: int, dname: string, city: string]
+
+scala> result.collect()foreach(println)
+[11,marketing,hydrabad]
+[12,sales,Pune]
+[13,HR,Mumbai]
+[14,IT,Bangloru]
+
+Step7:- join operation
+
+val rec = sqc.sql("select city, sum(sal) as tot from emp l join departs r 
+on l.dno= r.dno group by city")
+
+============================================================================
+
+first copy hive-site.xml file into /usr/spark/conf  
+
+if this file is not copyed spark can not understand hive metastore location.
+
+import org.apache.spark.sql.hive.HiveContext
+
+val hc = new HiveContext(sc)
+
+hc.sql("create database mydb")
+hc.sql("use mydb")
+hc.sql("cerate table result1 (dno int,tot int)")
+hc.sql("insert into table result1 select dno, sum(sal) from 
+default.emp group by dno"))	
+
+==============================================================
+
+val r1 = sqc.sql("........")
+val r2 = hc.sql(".........")
+
+r1.registerTempTable("res1")
+r2.registerTempTable("res2")
+
+==============================================================
+
+working with JSON using SQL Context
+json1
+------------------------------------------
+{"name":"viru","age":20,"sex":"M"}
+{"name":"ram","city":"pune","sex":"M"}
+-------------------------------------------
+
+val jdf = sqc.read.json("/user/...../json1")
+
+jdf---->df
+---------------------------
+name     age    city    sex
+---------------------------
+viru      20     null    M
+ram      null    pune    M
+
+---------------------------
+
+how to work with XML
+
+two ways
+a) 3rd party library [ex: databrics]
+b) integrate spark with hive using hive context and apply xml parsers such  as xpath(),xpath_string(), 
+xpath_int ....etc
+
+==========================================================
+                  xml1
+--------------------------------------------
+<rec><name>viru</name><age>25</age></rec>
+
+<rec><name>ram</name><sex>M</sex></rex>
+---------------------------------------------
+hc.sql("use mydb")
+hc.sql("create table row(line string)")
+hc.sql("load data local inpath 'xml1' into table row")
+hc.sql("create table info(name string, age int, sex string)
+row format delimited fileds terminated by ',' ")
+hc.hql ("insert overwrite table info
+        select xpath_string(line, 'rec/name')
+        xpath_int(line,'rec/age')
+        xpath_string(line, 'rec/sex')
+         from row")
+
+====================================================================
+
+
+
+
+

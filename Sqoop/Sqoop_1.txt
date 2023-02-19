@@ -1,0 +1,80 @@
+mysql -u root -p
+
+show databases;
+
+create database mydb5;
+
+use mydb5;
+
+show databases;
+
+show tables;
+
+create table student(
+roll_no int primary key,
+stud_name varchar(30),
+stud_marks int);
+
+insert into student values (100, 'John', 750);
+insert into student values (101, 'Daadus', 810);
+insert into student values (102, 'SMK', 2700);
+insert into student values (103, 'Roger', 1000);
+
+grant all privileges on mydb5.* to '%'@'localhost';
+
+grant all privileges on mydb5.* to ''@'localhost';
+
+# in another terminal
+sqoop import --connect jdbc:mysql://localhost/mydb5 --table student;
+
+# a new directory with name of table is created at location '/user/admin1/' location by default
+
+
+# importing data at from mysql at a certain target directory using sqoop
+# sqoop script to get records from student table with no mapper
+
+sqoop import --connect jdbc:mysql://localhost/mydb5 --table student -m1 --target-dir '/MyImport1/';
+
+hdfs dfs -cat /Myimport1/part-m-00000
+
+#
+sqoop import --connect jdbc:mysql://localhost/mydb5 --table student -m 1 --fields-terminated-by '|' --target-dir '/Sqoop_Import_2/student_new/';
+
+hdfs dfs -cat /Sqoop_Import_2/student_new/part-m-00000
+
+
+#
+sqoop import --connect jdbc:mysql://localhost/mydb5 --table student -m 1 --fields-terminated-by '|' --where 'stud_marks > 800' --target-dir '/Sqoop_Import_2/student_filtered/';
+
+hdfs dfs -cat /Sqoop_Import_2/student_filtered/part-m-00000
+
+
+#
+sqoop import --connect jdbc:mysql://localhost/mydb5 --table student -m 1 --fields-terminated-by '|' --columns 'roll_no, stud_name' --where 'stud_marks > 800' --target-dir '/Sqoop_Import_2/student_roll_name/';
+
+hdfs dfs -cat /Sqoop_Import_2/student_roll_name/part-m-00000
+
+#
+sqoop list-databases --connect jdbc:mysql://localhost/
+
+#
+sqoop list-tables --connect jdbc:mysql://localhost/mydb5
+
+---------------------------------------
+Assignment
+
+create table customer(
+customer_id int,
+customer_fname varchar(30),
+customer_lname varchar(30),
+customer_email varchar(30),
+customer_password  varchar(30),
+customer_street varchar(30),
+customer_city varchar(30),
+customer_state varchar(30),
+customer_zipcode varchar(30)
+);
+
+load data local infile '/home/admin1/Documents/Sqoop_Docs/Sqoop_Day1/Assignment_Day1/customers.csv' into table customer fields terminated by ',' lines terminated by '\n';
+
+

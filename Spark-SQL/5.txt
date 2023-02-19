@@ -1,0 +1,253 @@
+RDD---> DF ---> TABLE ---> SQL
+
+SPARK SQL PROVIDES TWO TYPES OF DATA OBJECT 
+
+1. DATA FRAME
+
+2. DATA SET
+
+		RDD				DATAFRAME 			DATASET
+RDD API      Y            		   N				  Y
+DF API       N			         Y		    		  N	
+DS API  	 N				   N			        Y
+
+DATAFRAME : - Cata list optimizer
+DATASET:- Cata list optimizer along with tugesten optimizer
+
+DATAFRAMES is faster than RDD because of catalist optimizer
+
+DATASET are faster than RDDs and dataframes because of tungesten optimizer
+
+both RDD and dataframe uses in memory computing
+
+in memory computing is very faster than traditional disk computing
+
+tungsten uses CPU caches along with in memory computing
+
+Computing using CPU caches is very faster than in memory computing
+
+speed of cpu cache > speed of in memory > speed of disk computing
+
+scala> import sqlContext.implicits._
+
+scala> import spark.sqlContext.implicits._
+
+
+scala> case class sample(a:Int, b:Int)	
+
+scala> val rdd = sc.parallelize(List(sample(10,20),
+      | sample(1,2), sample(5,6), sample(100,200), sample(1000,2000)))
+
+scala> rdd.collect.foreach(println)
+
+----- Above RDD we can convert into Dataframe -------
+
+scala> val df = rdd.toDF
+
+scala> df.show()
+
+-------- we can see DF structure---------
+scala> df.printSchema()
+
+----------- we can show specific colomn from data frame ----
+
+scala> df.select("a").show()
++----+
+|   a|
++----+
+|  10|
+|   1|
+|   5|
+| 100|
+|1000|
++----+
+
+scala> df.select("a","b").show()
++----+----+
+|   a|   b|
++----+----+
+|  10|  20|
+|   1|   2|
+|   5|   6|
+| 100| 200|
+|1000|2000|
++----+----+
+
+scala> df.select(df("a"),df("b")+100).show()
++----+---------+
+|   a|(b + 100)|
++----+---------+
+|  10|      120|
+|   1|      102|
+|   5|      106|
+| 100|      300|
+|1000|     2100|
++----+---------+
+
+scala> df.select("a","b").show()
++----+----+
+|   a|   b|
++----+----+
+|  10|  20|
+|   1|   2|
+|   5|   6|
+| 100| 200|
+|1000|2000|
++----+----+
+
+scala> df.select(df("a"),df("b")+1000).show()
++----+----------+
+|   a|(b + 1000)|
++----+----------+
+|  10|      1020|
+|   1|      1002|
+|   5|      1006|
+| 100|      1200|
+|1000|      3000|
++----+----------+
+
+scala> df.show()
++----+----+
+|   a|   b|
++----+----+
+|  10|  20|
+|   1|   2|
+|   5|   6|
+| 100| 200|
+|1000|2000|
++----+----+
+
+scala> df.filter(df("a")>=100).show()
++----+----+
+|   a|   b|
++----+----+
+| 100| 200|
+|1000|2000|
++----+----+
+
+scala> df.show()
++----+----+
+|   a|   b|
++----+----+
+|  10|  20|
+|   1|   2|
+|   5|   6|
+| 100| 200|
+|1000|2000|
++----+----+
+
+-----------
+scala> case class Emp(id:Int, name:String, sal:Int, sex:String, dno:Int);
+
+[cloudera@quickstart ~]$ cat xml1
+
+[cloudera@quickstart ~]$ cat emp
+
+scala> val data = sc.textFile("hdfs://quickstart.cloudera:8020/user/spark/emp.txt")
+
+scala> data.collect.foreach(println)
+101,aaa,40000,m,11
+102,bbb,50000,f,12
+103,ccc,90000,m,13
+104,ddd,80000,f,14
+105,eee,55000,m,15
+106,fff,60000,f,14
+107,jjj,44000,m,13
+108,kkk,23000,f,12
+109,sss,33000,m,13
+
+scala> val emp = data.map { x => 
+     | val w = x.split(",")
+     | Emp (w(0).toInt,
+     |      w(1),w(2).toInt,
+     |      w(3),w(4).toInt)
+     | }
+
+
+scala> emp.foreach(println)
+Emp(106,fff,60000,f,14)
+Emp(101,aaa,40000,m,11)
+Emp(107,jjj,44000,m,13)
+Emp(102,bbb,50000,f,12)
+Emp(108,kkk,23000,f,12)
+Emp(103,ccc,90000,m,13)
+Emp(109,sss,33000,m,13)
+Emp(104,ddd,80000,f,14)
+Emp(105,eee,55000,m,15)
+
+scala> val empdf = emp.toDF
+
+scala> empdf.groupBy(empdf("sex")).count.show()
++---+-----+                                                                     
+|sex|count|
++---+-----+
+|  f|    4|
+|  m|    5|
++---+-----+
+
+scala> empdf.show()
++---+----+-----+---+---+
+| id|name|  sal|sex|dno|
++---+----+-----+---+---+
+|101| aaa|40000|  m| 11|
+|102| bbb|50000|  f| 12|
+|103| ccc|90000|  m| 13|
+|104| ddd|80000|  f| 14|
+|105| eee|55000|  m| 15|
+|106| fff|60000|  f| 14|
+|107| jjj|44000|  m| 13|
+|108| kkk|23000|  f| 12|
+|109| sss|33000|  m| 13|
++---+----+-----+---+---+
+
+scala> empdf.groupBy(empdf("sex")).count.show()
++---+-----+
+|sex|count|
++---+-----+
+|  f|    4|
+|  m|    5|
++---+-----+
+
+scala> empdf.groupBy(empdf("sex")).agg(sum("sal"))
+res7: org.apache.spark.sql.DataFrame = [sex: string, sum(sal): bigint]
+
+scala> empdf.groupBy(empdf("sex")).agg(sum("sal")).show()
++---+--------+
+|sex|sum(sal)|
++---+--------+
+|  f|  213000|
+|  m|  262000|
++---+--------+
+
+scala> empdf.groupBy(empdf("sex")).agg(sum("sal"),max("sal")).show()
++---+--------+--------+
+|sex|sum(sal)|max(sal)|
++---+--------+--------+
+|  f|  213000|   80000|
+|  m|  262000|   90000|
++---+--------+--------+
+
+scala> empdf.groupBy(empdf("dno"),empdf("sex")).agg(sum("sal"),max("sal")).show()
++---+---+--------+--------+
+|dno|sex|sum(sal)|max(sal)|
++---+---+--------+--------+
+| 11|  m|   40000|   40000|
+| 12|  f|   73000|   50000|
+| 13|  m|  167000|   90000|
+| 14|  f|  140000|   80000|
+| 15|  m|   55000|   55000|
++---+---+--------+--------+
+
+-----------------------During grouping we can apply filter ---------
+
+scala> val ds = Seq(1,2,3).toDS()
+
+scala> ds.map(x => x+10).collect
+
+scala> 
+
+ 
+
+
+
+

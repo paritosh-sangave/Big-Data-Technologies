@@ -1,0 +1,258 @@
+scala> case class Samp(a:Int, b:Int, c:Int)
+defined class Samp
+
+scala> val s1 = Samp(10,20,30)
+s1: Samp = Samp(10,20,30)
+
+scala> val s2 = Samp(1,2,3)
+s2: Samp = Samp(1,2,3)
+
+scala> val s3 = Samp(100,200,300)
+s3: Samp = Samp(100,200,300)
+
+scala> val s4 = Samp(1000,2000,3000)
+s4: Samp = Samp(1000,2000,3000)
+
+scala> val data =sc.parallelize(List(s1,s2,s3,s4))
+data: org.apache.spark.rdd.RDD[Samp] = ParallelCollectionRDD[0] at parallelize at <console>:34
+
+scala> data.collect
+res0: Array[Samp] = Array(Samp(10,20,30), Samp(1,2,3), Samp(100,200,300), Samp(1000,2000,3000))
+
+scala> val x = data.map(v => v.a).collect
+x: Array[Int] = Array(10, 1, 100, 1000)
+
+scala> val x = data.map(v => v.a+v.b+v.c).collect
+x: Array[Int] = Array(60, 6, 600, 6000)
+
+scala> val df = data.toDF
+df: org.apache.spark.sql.DataFrame = [a: int, b: int ... 1 more field]
+
+scala> df.show()
++----+----+----+
+|   a|   b|   c|
++----+----+----+
+|  10|  20|  30|
+|   1|   2|   3|
+| 100| 200| 300|
+|1000|2000|3000|
++----+----+----+
+
+
+scala> df.printSchema()
+root
+ |-- a: integer (nullable = true)
+ |-- b: integer (nullable = true)
+ |-- c: integer (nullable = true)
+
+
+scala> df.registerTempTable("df")
+warning: there was one deprecation warning; re-run with -deprecation for details
+
+scala> sqlContext.sql("select * from df")
+res4: org.apache.spark.sql.DataFrame = [a: int, b: int ... 1 more field]
+
+scala> val df2 = sqlContext.sql("select a, b from df")
+df2: org.apache.spark.sql.DataFrame = [a: int, b: int]
+
+scala> df2.show()
++----+----+
+|   a|   b|
++----+----+
+|  10|  20|
+|   1|   2|
+| 100| 200|
+|1000|2000|
++----+----+
+
+scala> val df3 = sqlContext.sql("select a,b,c,a+b+c as tot from df")
+df3: org.apache.spark.sql.DataFrame = [a: int, b: int ... 2 more fields]
+
+scala> df3.show()
++----+----+----+----+
+|   a|   b|   c| tot|
++----+----+----+----+
+|  10|  20|  30|  60|
+|   1|   2|   3|   6|
+| 100| 200| 300| 600|
+|1000|2000|3000|6000|
++----+----+----+----+
+
+
+Cloudera@quickstart ~]$ cat emp
+101,aaa,40000,m,11
+102,bbb,50000,f,12
+103,ccc,90000,m,13
+104,ddd,80000,f,14
+105,eee,55000,m,15
+106,fff,60000,f,14
+107,jjj,44000,m,13
+108,kkk,23000,f,12
+109,sss,33000,m,13
+
+Cloudera@quickstart ~]$ hadoop fs -mkdir sqlLab
+
+Cloudera@quickstart ~]$hadoop fs -copyFromLacal emp sqlLab
+
+scala> val raw = sc.textFile("/user/root/sqlLab/emp")
+
+scala> raw.count
+res0: Long = 10
+
+scala> raw.take(1)
+res2: Array[String] = Array(101,aaa,40000,m,11)  
+
+scala> case class Info(id:Int, name:String, sal:Int, sex:String, dno:Int)
+defined class Info
+
+scala> def toInfo(x:String)={
+     | val w = x.split(",")
+     | val id = w(0).toInt
+     | val name = w(1)
+     | val sal = w(2).toInt
+     | val sex = w(3)
+     | val dno = w(4).toInt
+     | val info = Info(id,name,sal,sex,dno)
+     | Info
+     | }
+toInfo: (x: String)Info.type
+
+
+scala> val rec = "401,Rajesh,70000,m,12"
+rec: String = 401,Rajesh,70000,m,12
+
+
+scala> toInfoo(rec)
+
+scala> val i = toInfo(rec)
+
+scala> i.name
+
+scala>i.sal
+
+scala> val infos = raw.map(x => toInfo(x))
+
+scala> infos.foreach(println)
+
+scala>infos.map(x => x.sal).sum
+
+scala> val dfinfo = infos.toDF
+
+scala> dfinfo.show()
+
+scala> dfinfo.printSchema()
+
+scala> dfinfo.registerTempTable("dfinfos")
+
+scala> infos.filter(x => x.sex=="m").collect
+
+scala> sqlContext.sql("select * from dfinfo where sex='m'").show()
+
+scala> val pair = infos.map(x => (x.sex, x.sal))
+
+scala> val res = pair.reduceByKay(_+_)
+
+scala>res.collect
+
+scala>val r = sqlContext.sql("select sex, sum(sal) as tot from dfinfo group by sex").show()
+
+
+
+scala>infos.collect
+
+----------------------testing ---------
+scala> val pair = infos.map(x => (s.sex, x.sal)) 
+
+scala> val grp = pair.groupByKay()
+
+ //------array ((f,cb(....)),(m, cb(....)))----//
+ 
+scala> val res = grp.map { x =>=
+    val sex = x._1
+    val cb = x._2
+    val tat = cb.sum
+    val cnt = cb.size
+    val avg = tot/cnt
+    val max = cb.max
+    val min = cb.min
+(sex, tot, cnt, avg, max, min)
+}
+
+scala> grp.collect.foreach(println)
+
+scala> res.collect.foreach(println)
+
+scala> sqlContext.sql("select sex, sum(sal) as tot, count(*) as cnt, avg(sal) as avg,
+        max(sal) as max, min(sal) as min from dfinfo group by sex").show()
+
+scala> sqlContext.sql("select dno, sex, sum(sal) as tot, count(*) as cnt, avg(sal) as avg,
+        max(sal) as max, min(sal) as min from dfinfo group by dno, sex").show()
+
+[cloudera@quickstart ~]$ cat emp2
+201,kiran,14,m,20000
+201,rajat,12,f,30000
+203,giri,15,m,20000
+204,vijay,13,m,25000
+
+[cloudera@quickstart ~]$ hadoop fs -copyFromLocal emp2 sqlLab
+
+scala> val raw2 = sc.textFile("-----path.../emp2")
+
+scala> val infos2 = raw2.map{ x =>
+        | val w = x.split(",")
+        | Info(w(0).toInt
+        |      w(1),w(4).toInt,w(3),
+        |      w(2).toInt)
+        |}
+
+scala>infos.collect.foreach(println) 
+
+scala>infos2.collect.foreach(println)
+
+scala> dfinfo   
+
+scala> val dfinfo2 = infos2.toDF
+
+scala>dfinfo2.registerTempTable("dfinfo2")
+
+scala>val df = sqlContext.sql("select * from dfinfo union all select * from dfinfo2")
+
+scala>df.show()
+
+scala> df.registerTempTable("df")
+
+scala>sqlContext.sql("select sex, sum(sal) as tot from df group by sex").show()
+
+
+[cloudera@quickstart ~]$ cat dept
+
+11,marketing,pune
+12,hr,mumbai
+13,finance,chennai
+14,admin,kolkata
+
+[cloudera@quickstart ~]$ hadoop fs -copyFromLocal dept sqlLab
+
+scala> val raw3 = sc.textFile("-----path...../dept")
+
+scala> case class Dept(dno:Int, dname:String, loc:String)
+
+scala> val dept = row3.map(x => 
+            | val w = x.split(",")
+            | Dept(w(0).toInt, w(1), w(2))
+            | }
+scala> dept.collect.foreach(println)
+
+scala> infos.collect.foreach(println)
+
+scala> val deptdf = dept.toDF
+
+scala> deptdf.registerTempTable("dept")
+
+scala>val res = sqlContext.sql("select loc, sum(sal) as
+         tot from dfinfo l join dept r on (l.dno=r.no) group by loc")
+
+scala> res.show()
+
+scala> 
+

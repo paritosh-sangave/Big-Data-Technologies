@@ -1,0 +1,66 @@
+
+
+create table emp(emp_id int not null AUTO_INCREMENT, emp_name varchar(100), emp_sal int, primary key(emp_id));
+
+insert into emp values(1, 'ABC', 10000);
+insert into emp values(2, 'ABC', 10000);
+insert into emp values(3, 'ABC', 10000);
+
+sqoop import --connect jdbc:mysql://localhost/mydb5 --username root --password password --table emp --m 1 --target-dir '/Sqoop_Import_2/emp_incremental/';
+
+insert into emp values(4, 'DEF', 15000), (5, 'GHI', 16000), (6, 'JKL', 17000), (7, 'MNO', 19000);
+
+sqoop import --connect jdbc:mysql://localhost/mydb5 --username root --password password --table emp --m 1 --target-dir '/Sqoop_Import_2/emp_incremental' --incremental append --check-column emp_id --last-value 3
+
+---
+hive>
+create external table emp_from_sql(id int, name string, salary int)
+row format delimited
+fields terminated by ','
+location '/Sqoop_Import_2/emp_incremental';
+
+--------
+insert into emp values(8,'PQR',21000), (9,'STU',20000),(10,'VWX',28000);
+
+sqoop import --connect jdbc:mysql://localhost/mydb5 --username root --password password --table emp --m 1 --target-dir '/Sqoop_Import_2/emp_incremental_1' --incremental append --check-column emp_id --last-value 7;
+
+
+----------
+alter table emp add create_date timestamp default now();
+
+insert into emp values(null, "Name1", 4521, null);
+
+sqoop import --connect jdbc:mysql://localhost/mydb5 --username root --password password --table emp --m 1 --target-dir '/Sqoop_Import_2/emp_incremental_1'
+
+insert into emp values(null, "DADA", 70900, null);
+
+sqoop import \
+--connect jdbc:mysql://localhost/mydb5 \
+--username root \
+--password password \
+--table emp -m 1 \
+--incremental lastmodified \
+--merge-key emp_id \
+--check-column create_date \
+--last-value "2022-12-07 11:05:08" \
+--target-dir '/Sqoop_Import_2/emp_incremental_1'
+-----------
+create table emp3(emp_id int primary key, name varchar(30), salary int);
+
+sqoop export --connect jdbc:mysql://localhost/mydb5 --table emp3 --export-dir '/Sqoop_Import_2/emp_incremental/part-m-00000' --fields-terminated-by ',';
+
+-----------
+sqoop job --list
+
+sqoop job --show <job-name>
+
+sqoop job --exec <job-name>
+
+sqoop job --create mysqoopjob1 -- import --connect jdbc:mysql://localhost/mydb5 --table student -m 1 --fields-terminated-by '|' --target-dir '/Sqoop_Import_2/custom_job_1/'
+
+---------
+
+
+
+
+

@@ -1,0 +1,35 @@
+1. perform join on emp and dept table
+2. find department and sum of salary
+3. Group the information by department location
+
+Schema:-
+emp:- e_id,e_name,e_salary,gender,e_dept_id
+dept :- e_dept_id,dept_name,dept_location
+
+CREATE TABLE emp(
+e_id int,
+e_name string,
+e_salary int,
+gender string,
+e_dept_id int)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS textfile;
+
+
+CREATE TABLE dept(
+e_dept_id int,
+dept_name string,
+dept_location string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS textfile;
+
+--Join command
+SELECT * 
+FROM emp
+join dept
+on emp.e_dept_id=dept.e_dept_id;
+
+
+

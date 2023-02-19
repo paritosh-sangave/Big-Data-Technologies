@@ -1,0 +1,87 @@
+
+
+scala> case class Orders(
+     | order_id: Int,
+     | order_date: String,
+     | order_customer_id: Int,
+     | order_status: String);
+defined class Orders
+
+scala> case class OrderItems(
+     | order_item_id: Int,
+     | order_item_order_id: Int,
+     | order_item_product_id: Int,
+     | order_item_quality: Int,
+     | order_item_subtotal: Double,
+     | order_item_product_price: Double)
+defined class OrderItems
+
+scala> val o = Orders(1, "date", 1, "COMPLETE")
+o: Orders = Orders(1,date,1,COMPLETE)
+
+scala> val o = new Orders(1, "date", 1, "COMPLETE")
+o: Orders = Orders(1,date,1,COMPLETE)
+
+[root@quickstart /]# sqoop import-all-tables -m 1 --connect jdbc:mysql://quickstart.cloudera:3306/retail_db --username=retail_dba --password=cloudera --compression-codec=snappy --as-avrodatafile --warehouse-dir=/user/hive/warehouse
+
+scala>import org.apache.spark.{SparkConf, SparkContext}
+
+scala>val conf = new SparkConf().setAppName("Data Frames").setMaster("local")
+
+
+scala>val sc = new SparkContext(conf)
+
+scala>val orders = sc.textFile("/user/-----specify the path where ---/retail_db/orders")
+
+val orders = sc.textFile("/user/-----specify the path where ---/retail_db/orders")
+ user/ hive/ warehouse
+
+scala> orders.first()
+
+scala>import org.apache.spark.sql.SQLContext
+
+scala>val sqlContext = new SQLContext(sc)
+
+scala>import sqlContext.implicits._
+
+scala>val ordersDF = orders.map(rec => {
+val r = rec.split(",")
+Orders(r(0).toInt,r(1),r(2).toInt,r(3))
+}).toDF
+
+scala>val orderItems = sc.textFile("/usre/----specify path-----/retail_db/orders")
+
+scala>orderItems.first()
+
+scala>val orderItemDF = orderItem.map(rec => {
+val r = rec.split(",")
+OrderItem(r(0).toInt,r(1).toInt,r(2).toInt, r(3).toInt, r(4).toDouble, r(5).toDouble)
+}).toDF
+
+--------------print schema of dataframe -------
+
+scala>ordersDF.printSchema()
+
+--------------sample data --------
+scala>orderDF.show()
+
+--------------we can run query ------
+scala> orderDF.registerTempTable("orders")
+
+scala> sqlContext.sql("select * from orders limit 10")
+
+scala> sqlContext.sql("select * from orders limit 10").collect().foreach(println)
+
+
+scala> orderDF.show()
+
+scala>orderDF.select("order_id","order_date").show()
+
+scala> orderDF.filter(orderDF("order_status")=="COMPLETE")
+
+scala> orderDF.filter(orderDF("order_status")=="COMPLETE") or ordersDF("order_status") === "CLOSED").show()
+
+scala>val ordersFiltered = ordersDF.filter(ordersDF("order_status") == "COMPLETE" OR ordersDF("order_status") === "CLOSED")
+
+val ordersJoin = order
+

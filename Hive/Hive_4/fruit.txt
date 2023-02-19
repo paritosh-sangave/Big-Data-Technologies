@@ -1,0 +1,4 @@
+banana	50	hyd
+ apple	100	chennai
+mangoes	100	hyd
+grapes	70	banglore

@@ -1,0 +1,66 @@
+
+hive (mydb7)> Create table if not exists employee_internal
+            > (
+            > name string,
+            > work_place array<string>,
+            > sex_age struct<sex:string,age:int>,
+            > skills_score map<string,int>,
+            > depart_title map<string,array<string>>
+            > )
+            > comment 'this is internal table'
+            > row format delimited
+            > fields terminated by '|'
+            > map keys terminated by ':'
+            > stored as textfile;
+         
+###########################################
+
+hive (mydb7)> Create external table if not exists employee_external
+            > (
+            > name string,
+            > work_place array<string>,
+            > sex_age struct<sex:string,age:int>,
+            > skills_score map<string,int>,
+            > depart_title map<string,array<string>>
+            > )
+            > comment 'this is external table'
+            > row format delimited
+            > fields terminated by '|'
+            > map keys terminated by ':'
+            > stored as textfile
+            > location '/data_employee/';
+
+############################################
+//to display current working database
+set hive.cli.print.current.db=true;
+
+############################################
+
+CREATE VIEW employee_skills
+AS
+SELECT name, skills_score['DB'] AS DB,
+skills_score['Perl'] AS Perl, skills_score['Python'] AS Python,
+skills_score['Sales'] AS Sales, skills_score['HR'] AS HR
+from employee_external;
+
+
+###############################################
+
+create table student(
+name string,
+rollno int,
+percentage float
+)
+partitioned by (state string, city string)
+row format delimited
+fields terminated by ','; 
+
+load data local inpath '/home/admin1/Documents/Hive_Docs/HiveData/partstudmah' into table part.student partition(state='mah', city='pune');
+
+load data local inpath '/home/admin1/Documents/Hive_Docs/HiveData/partstudgujrat' into table part.student partition(state='Gujrat', city='Surat');
+
+
+
+################################################
+
+
