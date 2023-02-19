@@ -1,0 +1,94 @@
+Data manipulation commands
+
+These commands will work on the table related to data manipulations such as putting data into a table, retrieving data from a table and deleting schema, etc.
+
+The commands come under these are
+
+    - -> Count
+    - -> Put
+    - -> Get
+    - -> Delete
+    - -> Delete all
+    - -> Truncate
+    - -> Scan 
+
+------
+Count
+------
+    
+Syntax: hbase> count <'tablename'>, CACHE =>1000
+
+The command will retrieve the count of a number of rows in a table. 
+
+The value returned by this one is the number of rows.
+        
+Current count is shown per every 1000 rows by default.
+        
+Count interval may be optionally specified.
+        
+Default cache size is 10 rows.
+        
+Count command will work fast when it is configured with right Cache.
+
+---------
+Truncate
+---------
+
+After truncate of an hbase table, the schema will present but not the records. 
+
+This command performs 3 functions
+
+   1.  Disables table if it already presents
+   2.  Drops table if it already presents
+   3.  Recreates the mentioned table 
+
+Syntax: hbase> truncate <tablename> 
+
+---------
+Scan
+---------
+
+Syntax: hbase>scan <'tablename'>, {Optional parameters}
+
+This command scans entire table and displays the table contents.
+
+We can pass several optional specifications to this scan command 
+to get more information about the tables present in the system.
+   
+scanner specifications may include one or more of the following attributes.
+
+These are TIMERANGE, FILTER, TIMESTAMP, LIMIT, MAXLENGTH, COLUMNS, CACHE, STARTROW and STOPROW.
+
+------------------------------
+Cluster Replication Commands
+------------------------------
+
+These commands work on cluster set up mode of HBase.
+
+For adding and removing peers to cluster and to start and stop replication these commands are used in general.
+
+- - > add_peer
+	
+Add peers to cluster to replicate
+
+hbase> add_peer '3', zk1,zk2,zk3:2182:/hbase-prod
+
+- - > remove_peer
+	
+Stops the defined replication stream.
+
+Deletes all the metadata information about the peer
+
+hbase> remove_peer '1'
+
+- - > start_replication
+	
+Restarts all the replication features
+
+hbase> start_replication
+
+- - > stop_replication
+	
+Stops all the replication features
+
+hbase>stop_replication 

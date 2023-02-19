@@ -1,0 +1,149 @@
+admin1@admin1:~$ start-all.sh
+
+admin1@admin1:~$ jps
+
+admin1@admin1:~$ /usr/local/hbase/bin/start-hbase.sh
+
+admin1@admin1:~$ hbase shell
+
+- - > Status - Provides the status of HBase, for example, the number of servers.
+
+hbase(main):001:0> status
+
+- - > version - Provides the version of HBase being used.
+
+hbase(main):002:0> version
+
+- - > table_help - Provides help for table-reference commands.
+
+hbase(main):003:0> table_help
+
+- - > whoami - Provides information about the user.
+
+hbase(main):004:0> whoami
+
+------------------------------
+Data Definition Language
+------------------------------
+
+create - Creates a table.
+
+hbase(main):005:0> create 'student','student_info','student_college'
+
+You can verify whether the table is created using the list command.
+
+hbase(main):006:0> list
+
+To delete a table or change its settings, you need to first disable 
+the table using the disable command.
+
+hbase(main):007:0> disable 'student'
+
+hbase(main):009:0> scan 'student'
+
+After disabling the table, you can still sense its existence through 
+list and exists commands. You cannot scan it. 
+
+- - > is_disabled
+
+It is used to find whether a table is disabled.
+
+hbase(main):010:0> is_disabled 'student'
+
+- - > disable_all
+
+It is used to disable all the tables matching the given regex. The syntax for disable_all command is given below.
+
+hbase(main):011:0> disable_all 's.*'
+
+- - > Enabling a Table using HBase Shell.
+
+hbase(main):012:0> enable 'student'
+
+- - > Verifivcation
+
+hbase(main):013:0> scan 'student'
+
+- - > is_enabled
+
+IT is used to find whether a table is enabled. 
+
+hbase(main):014:0> is_enabled 'student'
+true
+
+- - > describe
+
+It is use to returns the description of the table.
+
+hbase(main):015:0> describe 'student'
+
+- - > alter
+
+Alter is the command used to make changes to an existing table. 
+
+we can change the maximum number of cells of a column family, set and delete table scope operators, and delete a column family from a table.
+
+hbase(main):016:0> alter 'student', NAME ⇒ 'student_info', VERSIONS => 5
+
+- - > Table Scope Operators
+
+Using alter, you can set and remove table scope operators such as 
+
+1. READONLY 
+2. MAX_FILESIZE 
+3. MEMSTORE_FLUSHSIZE
+4. DEFERRED_LOG_FLUSH
+
+- - > Setting Read Only (to make a table read only).
+
+hbase(main):001:0> alter 'student',READONLY
+
+- - > Removing Table Scope Operators
+
+We can also remove the table scope operators. Given below is the syntax to remove
+‘MAX_FILESIZE’ from emp table.
+
+hbase(main):002:0> alter 'student', METHOD ⇒ 'table_att_unset', NAME ⇒ 'MAX_FILESIZE'
+
+- - > Deleting a Column Family
+
+Using alter, we can also delete a column family. 
+
+hbase(main):003:0> alter 'student','delete'=>'student_info'
+
+- - > Existence of Table using HBase Shell
+
+It is use to verify the existence of a table using the exists command.
+
+hbase(main):004:0> exists 'student'
+
+- - > Dropping a Table using HBase Shell
+
+Drop command is used to delete a table. 
+Before dropping a table, you have to disable it.
+
+hbase(main):005:0> disable 'student'
+
+hbase(main):006:0> drop 'student'
+
+- - > drop_all
+
+It is used to drop the tables matching the “regex” given in the command.
+
+hbase(main):001:0> disable 'emp'
+
+hbase(main):002:0> drop_all 'e.*'
+
+- - > exit
+
+exit is use to exit the shell.
+
+hbase(main):003:0> exit
+
+
+
+
+
+
+
+

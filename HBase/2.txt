@@ -1,0 +1,112 @@
+
+- - - > How to insert Data in Hbase using HBase Shell
+
+hbase(main):001:0> create 'hospital','doctor_info','patient_info'
+
+Using put command, you can insert rows into a table.
+
+Syntax :- put ’<table name>’,’row1’,’<colfamily:colname>’,’<value>’
+
+hbase(main):002:0> put 'hospital','1','doctor_info:doc_id','101'
+
+hbase(main):003:0> put 'hospital','1','doctor_info:doc_name','John'
+
+hbase(main):004:0> put 'hospital','1','doctor_info:doc_salary','55000'
+
+hbase(main):005:0> put 'hospital','1','doctor_info:doc_hos_name','Ruby'
+
+hbase(main):006:0> put 'hospital','2','doctor_info:doc_id','102'
+
+hbase(main):007:0> put 'hospital','2','doctor_info:doc_name','Batra'
+
+hbase(main):008:0> put 'hospital','2','doctor_info:doc_salary','65000'
+
+hbase(main):009:0> put 'hospital','2','doctor_info:doc_hos_name','Sancheti'
+
+hbase(main):011:0> put 'hospital','1','patient_info:pet_id','1001'
+
+hbase(main):012:0> put 'hospital','1','patient_info:pet_name','Chandu'
+
+hbase(main):013:0> put 'hospital','1','patient_info:pet_city','pune'
+
+hbase(main):035:0> put 'hospital','1','patient_info:pet_id','1002'
+
+hbase(main):036:0> put 'hospital','1','patient_info:pet_name','sunny'
+
+hbase(main):037:0> put 'hospital','1','patient_info:pet_city','mumbai'
+
+- - - > How to update Data in Hbase using HBase Shell
+
+Syntax:- 
+
+put ‘table name’,’row ’,'Column family:column name',’new value’
+
+hbase(main):040:0> put 'hospital','1','doctor_info:doc_salary','65000'
+
+- - - > How to Read Data using HBase Shell
+
+The get command and the get method of HTable class are used to read data from a table in HBase. 
+
+syntax:
+
+get ’<table name>’,’row1’
+
+hbase(main):042:0> get 'hospital','1'
+
+hbase(main):043:0> get 'hospital','2'
+
+- - > How to Delete a Specific Cell in a Table
+
+syntax :- delete ‘<table name>’, ‘<row>’, ‘<column name >’,‘<time stamp>’
+
+hbase(main):045:0> delete 'hospital','1','doctor_info:doc_hos_name',1532490219093
+
+- - - > How to Delete All Cells in a Table
+
+syntax:- deleteall ‘<table name>’, ‘<row>’,
+
+hbase(main):046:0> deleteall 'hospital','2'
+
+- - - > How to view table using HBase Shell
+
+syntax :- scan ‘<table name>’
+
+hbase(main):047:0> scan 'hospital'
+
+- - - > How to give permissions to users in HBase.
+
+grant
+
+grants specific rights such as read, write, execute, and admin on a table to a
+certain user.
+
+syntax :- grant <user> <permissions> [<table> [<column family> [&ltcolumn; qualifier>]]
+
+We can grant zero or more privileges to a user from the set of RWXCA, 
+
+where
+
+     R - represents read privilege.
+     W - represents write privilege.
+     X - represents execute privilege.
+     C - represents create privilege.
+     A - represents admin privilege.
+
+revoke
+
+The revoke command is used to revoke a user's access rights of a table. 
+
+Syntax:- revoke <user>
+
+user_permission
+
+It is used to list all the permissions for a particular table. 
+
+syntax :- user_permission ‘tablename’
+
+
+
+
+
+
+
